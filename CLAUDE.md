@@ -32,7 +32,8 @@ The main job: tell a parent, within seconds, when the driver's phone is used whi
 
 - Phase 1 code written (PR "Phase 1: drive tracking and phone-use alerts"). Server tested locally end to end. The iPhone build has not been compiled yet (no Mac here; first EAS build will show any Swift errors).
 - Server live (2026-09-29): Worker `drivewatch-api` at https://drivewatch-api.noisy-sunset-3f0d.workers.dev, D1 `drivewatch` with migration 0001 applied. Deployed from Doug's laptop with `npx wrangler deploy` (no Cloudflare token in cloud sessions; workers.dev is blocked by the cloud network policy, so check it with a web fetch).
-- Next: first EAS iOS build + TestFlight from Doug's laptop.
+- First EAS iOS build started from Doug's laptop on 2026-09-29 (Expo account webdesignnerds-team, auto-submit to TestFlight); the latest commit pins react-dom, worklets and reanimated to SDK 57 versions for it. App Store listing is "DriveWatch (d5baeb)" because "DriveWatch" is taken; renaming it to "DriveWatch Family" is on Doug's to-do list.
+- Decisions and why: `docs/adr/`.
 
 ## Plan
 
