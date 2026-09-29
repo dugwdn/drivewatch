@@ -4,6 +4,7 @@ import { alertFor } from '../../shared/alerts';
 import { distanceM } from '../../shared/drive';
 import type { EventIn, FamilyRules, IngestBody, LocationPermission, PointIn } from '../../shared/types';
 import { DEFAULT_RULES } from '../../shared/types';
+import { cleanUsage, type UsageAction } from '../../shared/usage';
 import { hashToken, memberFromRequest, newId, newInviteCode, newToken, type Env, type Member } from './auth';
 import { pushToParents } from './push';
 
@@ -73,6 +74,7 @@ async function route(req: Request, env: Env): Promise<Response> {
   if (method === 'POST' && path === '/v1/invites') return createInvite(req, env, me);
   if (method === 'POST' && path === '/v1/push-token') return savePushToken(req, env, me);
   if (method === 'POST' && path === '/v1/ingest') return ingest(req, env, me);
+  if (method === 'POST' && path === '/v1/usage') return saveUsage(req, env, me);
   if (method === 'GET' && path === '/v1/live') return live(env, me);
   if (method === 'GET' && path === '/v1/trips') return listTrips(url, env, me);
   if (method === 'GET' && path === '/v1/events') return listEvents(url, env, me);
@@ -117,6 +119,7 @@ async function createFamily(req: Request, env: Env): Promise<Response> {
       "INSERT INTO members (id, family_id, role, name, token_hash, created_at) VALUES (?, ?, 'parent', ?, ?, ?)",
     ).bind(memberId, familyId, parentName, await hashToken(token), now),
   ]);
+  await track(env, { id: memberId, family_id: familyId, role: 'parent' }, 'family_created');
   return json({ token, member: { id: memberId, role: 'parent', name: parentName, familyId } });
 }
 
@@ -151,6 +154,7 @@ async function join(req: Request, env: Env): Promise<Response> {
     await env.DB.prepare('DELETE FROM members WHERE id = ?').bind(memberId).run();
     throw new HttpError(400, 'That code was just used. Ask for a new one.');
   }
+  await track(env, { id: memberId, family_id: invite.family_id, role: invite.role }, 'member_joined', invite.role);
   return json({ token, member: { id: memberId, role: invite.role, name, familyId: invite.family_id } });
 }
 
@@ -175,11 +179,15 @@ async function updateFamily(req: Request, env: Env, me: Member): Promise<Respons
   const current = await rulesFor(env, me.family_id);
   const phone = clampInt(b.phoneSpeedMph, 5, 60, current.phoneSpeedMph);
   const max = clampInt(b.maxSpeedMph, 30, 120, current.maxSpeedMph);
+  const newName = typeof b.name === 'string' && b.name.trim() ? b.name.trim().slice(0, 60) : null;
   await env.DB.prepare(
     'UPDATE families SET phone_speed_mph = ?, max_speed_mph = ?, name = COALESCE(?, name) WHERE id = ?',
   )
-    .bind(phone, max, typeof b.name === 'string' && b.name.trim() ? b.name.trim().slice(0, 60) : null, me.family_id)
+    .bind(phone, max, newName, me.family_id)
     .run();
+  if (phone !== current.phoneSpeedMph) await track(env, me, 'rules_changed', 'phone_speed');
+  if (max !== current.maxSpeedMph) await track(env, me, 'rules_changed', 'max_speed');
+  if (newName) await track(env, me, 'rules_changed', 'family_name');
   return json({ rules: { phoneSpeedMph: phone, maxSpeedMph: max } });
 }
 
@@ -200,7 +208,10 @@ async function createInvite(req: Request, env: Env, me: Member): Promise<Respons
     )
       .bind(code, me.family_id, role, me.id, expiresAt)
       .run();
-    if (res.meta.changes) return json({ code, role, expiresAt });
+    if (res.meta.changes) {
+      await track(env, me, 'invite_created', role);
+      return json({ code, role, expiresAt });
+    }
   }
   throw new HttpError(500, 'Could not make a code. Try again.');
 }
@@ -222,7 +233,44 @@ async function removeMember(id: string, env: Env, me: Member): Promise<Response>
     .bind(id, me.family_id)
     .run();
   if (!res.meta.changes) throw new HttpError(404, 'Not found.');
+  await track(env, me, 'member_removed');
   return json({ ok: true });
+}
+
+// ---- App use counts (our own analytics; nothing goes to Google) ----
+
+type Actor = Pick<Member, 'id' | 'family_id' | 'role'>;
+
+/** Records one server-side use row. Never fails the request it rides on. */
+async function track(env: Env, who: Actor, action: UsageAction, object: string | null = null): Promise<void> {
+  const now = Date.now();
+  try {
+    await env.DB.prepare(
+      `INSERT INTO usage_events (id, family_id, member_id, role, action, object, source, t, received_at)
+       VALUES (?, ?, ?, ?, ?, ?, 'server', ?, ?)`,
+    )
+      .bind(newId(), who.family_id, who.id, who.role, action, object, now, now)
+      .run();
+  } catch (err) {
+    console.error('usage', err);
+  }
+}
+
+async function saveUsage(req: Request, env: Env, me: Member): Promise<Response> {
+  const b = await body<{ events?: unknown }>(req);
+  const now = Date.now();
+  const rows = cleanUsage(b.events, now);
+  if (rows.length) {
+    await env.DB.batch(
+      rows.map((r) =>
+        env.DB.prepare(
+          `INSERT OR IGNORE INTO usage_events (id, family_id, member_id, role, action, object, source, t, received_at)
+           VALUES (?, ?, ?, ?, ?, ?, 'app', ?, ?)`,
+        ).bind(r.id, me.family_id, me.id, me.role, r.action, r.object ?? null, r.t, now),
+      ),
+    );
+  }
+  return json({ saved: rows.length });
 }
 
 // ---- Data from the driver's phone ----
@@ -467,6 +515,7 @@ async function getTrip(id: string, env: Env, me: Member): Promise<Response> {
     .bind(id, me.family_id, me.role, me.id)
     .first();
   if (!trip) throw new HttpError(404, 'Not found.');
+  await track(env, me, 'trip_viewed');
   const [{ results: points }, { results: events }] = await Promise.all([
     env.DB.prepare('SELECT t, lat, lng, speed_mps FROM points WHERE trip_id = ? ORDER BY t LIMIT 10000').bind(id).all(),
     env.DB.prepare('SELECT id, type, t, lat, lng, speed_mps, detail FROM events WHERE trip_id = ? ORDER BY t')
@@ -499,6 +548,7 @@ async function markPassenger(req: Request, id: string, env: Env, me: Member): Pr
     .bind(b.passenger ? 1 : 0, id, me.family_id, me.role, me.id)
     .run();
   if (!res.meta.changes) throw new HttpError(404, 'Not found.');
+  await track(env, me, 'passenger_marked', b.passenger ? 'on' : 'off');
   return json({ ok: true });
 }
 

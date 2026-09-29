@@ -13,6 +13,7 @@ The main job: tell a parent, within seconds, when the driver's phone is used whi
 - `modules/drive-sensors/` local native Swift module: unlock/lock (protected data notifications), device rotation for "phone in hand", active call and audio route (ear vs. Bluetooth/CarPlay). Android is a stub.
 - `shared/` pure TypeScript used by both the app and the server: drive start/end detection, phone-use detection, alert wording, shared types.
 - `server/` Cloudflare Worker + D1 (free plan). Every row belongs to a family. Typed events table. Cron every 5 minutes flags phones that go quiet mid-drive.
+- Analytics: our own `usage_events` table (migration 0002), never Google, because drivers are minors and the app holds location. The phone sends only `app_open` and `screen_view` (route pattern, no ids) via `src/lib/usage.ts`; the server records family/invite/rules/passenger/trip-viewed actions itself. Rows carry no location, names, or free text. Allowed actions live in `shared/usage.ts`.
 
 ## Rules
 
@@ -32,6 +33,7 @@ The main job: tell a parent, within seconds, when the driver's phone is used whi
 
 - Phase 1 code written (PR "Phase 1: drive tracking and phone-use alerts"). Server tested locally end to end. The iPhone build has not been compiled yet (no Mac here; first EAS build will show any Swift errors).
 - Server live (2026-09-29): Worker `drivewatch-api` at https://drivewatch-api.noisy-sunset-3f0d.workers.dev, D1 `drivewatch` with migration 0001 applied. Deployed from Doug's laptop with `npx wrangler deploy` (no Cloudflare token in cloud sessions; workers.dev is blocked by the cloud network policy, so check it with a web fetch).
+- App-use counts (analytics) added on phase-1-core. Live database still needs migration 0002 and a Worker redeploy from Doug's laptop (`npx wrangler d1 migrations apply drivewatch --remote`, then `npx wrangler deploy` in server/). Until then the app quietly keeps its counts on the phone. No screen shows the counts yet.
 - Next: first EAS iOS build + TestFlight from Doug's laptop.
 
 ## Plan
@@ -42,4 +44,4 @@ The main job: tell a parent, within seconds, when the driver's phone is used whi
 4. Phase 3: Apple Family Controls entitlement for app names.
 5. Later: Android, payments, parent website, move Apple account to the company.
 
-Before launch (lawyer items, not blocking): terms and privacy policy for other families, minors' location data rules, data retention rule.
+Before launch (lawyer items, not blocking): terms and privacy policy for other families (must mention the app-use counts), minors' location data rules, data retention rule.

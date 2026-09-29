@@ -1,4 +1,5 @@
 import type { FamilyRules, IngestBody, Role } from '../../shared/types';
+import type { UsageIn } from '../../shared/usage';
 import { API_URL } from './config';
 import { getSession } from './session';
 
@@ -97,4 +98,5 @@ export const api = {
   events: () => call<{ events: EventRow[] }>('GET', '/v1/events'),
   markPassenger: (id: string, passenger: boolean) =>
     call<{ ok: true }>('POST', `/v1/trips/${encodeURIComponent(id)}/passenger`, { passenger }),
+  usage: (events: UsageIn[]) => call<{ saved: number }>('POST', '/v1/usage', { events }),
 };
