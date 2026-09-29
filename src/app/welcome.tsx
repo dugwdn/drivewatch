@@ -32,7 +32,7 @@ export default function Welcome() {
     setBusy(true);
     try {
       if (mode === 'start') await finish(await api.createFamily(familyName, name));
-      else await finish(await api.join(code, name));
+      else await finish(await api.join(code, name, Platform.OS));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong.');
     } finally {

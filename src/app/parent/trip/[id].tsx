@@ -1,8 +1,9 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import { api, type TripDetail } from '../../../lib/api';
+import { inAppMaps, openInMaps } from '../../../lib/maps';
 import { dayTimeText, durationText, eventLabel, milesText, speedText, timeText } from '../../../lib/format';
 import { colors, ui } from '../../../lib/theme';
 
@@ -34,7 +35,7 @@ export default function TripScreen() {
       </Text>
       {!!trip.passenger && <Text style={ui.body}>{trip.driver_name} marked this drive "I was a passenger".</Text>}
 
-      {coords.length > 0 && (
+      {inAppMaps && coords.length > 0 && (
         <MapView
           style={{ height: 340, borderRadius: 12 }}
           initialRegion={region(coords)}
@@ -54,6 +55,12 @@ export default function TripScreen() {
         </MapView>
       )}
 
+      {!inAppMaps && coords.length > 0 && (
+        <Pressable onPress={() => openInMaps(coords[coords.length - 1].latitude, coords[coords.length - 1].longitude)}>
+          <Text style={[ui.body, { color: colors.brand }]}>Show where this drive ended</Text>
+        </Pressable>
+      )}
+
       <Text style={[ui.h2, { marginTop: 8 }]}>What happened</Text>
       {flagged.length === 0 && <Text style={ui.muted}>No phone use or high speed on this drive.</Text>}
       {flagged.map((e) => (
@@ -61,6 +68,11 @@ export default function TripScreen() {
           <View>
             <Text style={[ui.body, { fontWeight: '600', color: colors.danger }]}>{eventLabel(e.type)}</Text>
             <Text style={ui.muted}>{timeText(e.t)}</Text>
+            {!inAppMaps && e.lat != null && e.lng != null && (
+              <Pressable onPress={() => openInMaps(e.lat!, e.lng!)} hitSlop={8}>
+                <Text style={[ui.muted, { color: colors.brand }]}>Show on map</Text>
+              </Pressable>
+            )}
           </View>
           {e.speed_mps != null && <Text style={ui.body}>{speedText(e.speed_mps)}</Text>}
         </View>

@@ -1,4 +1,4 @@
-// Sends iPhone alerts through Expo's free push service.
+// Sends phone alerts (iPhone and Android) through Expo's free push service.
 
 import type { Env } from './auth';
 import type { AlertText } from '../../shared/alerts';
@@ -20,6 +20,7 @@ export async function pushToParents(env: Env, familyId: string, alert: AlertText
     sound: 'default',
     priority: 'high',
     interruptionLevel: 'time-sensitive',
+    channelId: 'alerts', // Android: the loud channel the app creates
   }));
 
   const res = await fetch(EXPO_PUSH_URL, {

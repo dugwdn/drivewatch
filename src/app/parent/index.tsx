@@ -4,6 +4,7 @@ import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
 import MapView, { Marker } from 'react-native-maps';
 import { api, type EventRow, type LiveDriver, type TripRow } from '../../lib/api';
 import { agoText, dayTimeText, durationText, eventLabel, milesText, speedText } from '../../lib/format';
+import { inAppMaps, openInMaps } from '../../lib/maps';
 import { registerForAlerts } from '../../lib/notifications';
 import { colors, ui } from '../../lib/theme';
 
@@ -72,7 +73,7 @@ export default function ParentHome() {
       >
         {!!error && <Text style={ui.error}>{error}</Text>}
 
-        {located.length > 0 && (
+        {inAppMaps && located.length > 0 && (
           <MapView
             ref={map}
             style={{ height: 260, borderRadius: 12 }}
@@ -108,6 +109,11 @@ export default function ParentHome() {
                 </Text>
               </View>
               <Text style={ui.muted}>Last update {agoText(d.last_seen_at)}</Text>
+              {!inAppMaps && d.last_lat != null && d.last_lng != null && (
+                <Pressable onPress={() => openInMaps(d.last_lat!, d.last_lng!)} hitSlop={8}>
+                  <Text style={[ui.body, { color: colors.brand }]}>Show on map</Text>
+                </Pressable>
+              )}
               {d.phone_events_today > 0 && (
                 <Text style={[ui.body, { color: colors.danger }]}>
                   Phone use while driving: {d.phone_events_today} in the last 24 hours

@@ -124,7 +124,7 @@ async function createFamily(req: Request, env: Env): Promise<Response> {
 }
 
 async function join(req: Request, env: Env): Promise<Response> {
-  const b = await body<{ code?: string; name?: string }>(req);
+  const b = await body<{ code?: string; name?: string; platform?: string }>(req);
   const code = text(b.code, 'Code', 12).toUpperCase().replace(/[^A-Z0-9]/g, '');
   const name = text(b.name, 'Your name');
   const now = Date.now();
@@ -135,6 +135,11 @@ async function join(req: Request, env: Env): Promise<Response> {
     .first<{ code: string; family_id: string; role: 'parent' | 'driver'; expires_at: number; used_by: string | null }>();
   if (!invite || invite.used_by || invite.expires_at < now) {
     throw new HttpError(400, 'That code is not valid. Ask a parent for a new one.');
+  }
+  // Drive logging and phone-use sensing exist only on iPhone so far. Check
+  // before the code is used up, so it still works on the right phone.
+  if (invite.role === 'driver' && b.platform === 'android') {
+    throw new HttpError(400, "A driver's phone has to be an iPhone for now. Use this code in DriveWatch on the driver's iPhone.");
   }
   const memberId = newId();
   const token = newToken();

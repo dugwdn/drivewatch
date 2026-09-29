@@ -84,7 +84,8 @@ export interface FamilyInfo {
 export const api = {
   createFamily: (familyName: string, parentName: string) =>
     call<JoinResult>('POST', '/v1/families', { familyName, parentName }),
-  join: (code: string, name: string) => call<JoinResult>('POST', '/v1/join', { code, name }),
+  join: (code: string, name: string, platform: string) =>
+    call<JoinResult>('POST', '/v1/join', { code, name, platform }),
   family: () => call<FamilyInfo>('GET', '/v1/family'),
   updateRules: (rules: Partial<FamilyRules>) => call<{ rules: FamilyRules }>('PATCH', '/v1/family', rules),
   invite: (role: Role) => call<{ code: string; role: Role; expiresAt: number }>('POST', '/v1/invites', { role }),
