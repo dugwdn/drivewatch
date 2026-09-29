@@ -89,6 +89,7 @@ export const api = {
   updateRules: (rules: Partial<FamilyRules>) => call<{ rules: FamilyRules }>('PATCH', '/v1/family', rules),
   invite: (role: Role) => call<{ code: string; role: Role; expiresAt: number }>('POST', '/v1/invites', { role }),
   removeMember: (id: string) => call<{ ok: true }>('DELETE', `/v1/members/${id}`),
+  deleteMe: () => call<{ ok: true; familyDeleted: boolean }>('DELETE', '/v1/me'),
   savePushToken: (pushToken: string) => call<{ ok: true }>('POST', '/v1/push-token', { pushToken }),
   ingest: (body: IngestBody, token: string) => call<{ rules: FamilyRules }>('POST', '/v1/ingest', body, token),
   live: () => call<{ drivers: LiveDriver[] }>('GET', '/v1/live'),

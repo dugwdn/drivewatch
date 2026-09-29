@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, Share, Text, View } from 'react-native';
 import type { FamilyRules, Role } from '../../../shared/types';
+import { confirmDeleteAccount } from '../../lib/account';
 import { api, type FamilyInfo } from '../../lib/api';
 import { Button } from '../../lib/Button';
 import { agoText } from '../../lib/format';
@@ -146,6 +147,7 @@ export default function Settings() {
 
       <View style={{ marginTop: 24 }}>
         <Button title="Sign out on this phone" quiet onPress={signOut} />
+        <Button title="Delete my account" quiet onPress={() => confirmDeleteAccount('parent', setError)} />
       </View>
     </ScrollView>
   );

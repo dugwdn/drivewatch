@@ -6,6 +6,7 @@ import type { EventIn, FamilyRules, IngestBody, LocationPermission, PointIn } fr
 import { DEFAULT_RULES } from '../../shared/types';
 import { cleanUsage, type UsageAction } from '../../shared/usage';
 import { hashToken, memberFromRequest, newId, newInviteCode, newToken, type Env, type Member } from './auth';
+import { page } from './pages';
 import { pushToParents } from './push';
 
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -61,6 +62,7 @@ async function route(req: Request, env: Env): Promise<Response> {
   const method = req.method;
 
   if (method === 'GET' && path === '/health') return json({ ok: true });
+  if (method === 'GET' && (path === '/privacy' || path === '/support' || path === '')) return page(path, env);
 
   // No sign-in needed for these two.
   if (method === 'POST' && path === '/v1/families') return createFamily(req, env);
@@ -75,6 +77,7 @@ async function route(req: Request, env: Env): Promise<Response> {
   if (method === 'POST' && path === '/v1/push-token') return savePushToken(req, env, me);
   if (method === 'POST' && path === '/v1/ingest') return ingest(req, env, me);
   if (method === 'POST' && path === '/v1/usage') return saveUsage(req, env, me);
+  if (method === 'DELETE' && path === '/v1/me') return deleteMe(env, me);
   if (method === 'GET' && path === '/v1/live') return live(env, me);
   if (method === 'GET' && path === '/v1/trips') return listTrips(url, env, me);
   if (method === 'GET' && path === '/v1/events') return listEvents(url, env, me);
@@ -129,15 +132,30 @@ async function join(req: Request, env: Env): Promise<Response> {
   const name = text(b.name, 'Your name');
   const now = Date.now();
   const invite = await env.DB.prepare(
-    'SELECT code, family_id, role, expires_at, used_by FROM invites WHERE code = ?',
+    'SELECT code, family_id, role, expires_at, used_by, reusable FROM invites WHERE code = ?',
   )
     .bind(code)
-    .first<{ code: string; family_id: string; role: 'parent' | 'driver'; expires_at: number; used_by: string | null }>();
+    .first<{
+      code: string;
+      family_id: string;
+      role: 'parent' | 'driver';
+      expires_at: number;
+      used_by: string | null;
+      reusable: number;
+    }>();
   if (!invite || invite.used_by || invite.expires_at < now) {
     throw new HttpError(400, 'That code is not valid. Ask a parent for a new one.');
   }
   const memberId = newId();
   const token = newToken();
+  if (invite.reusable) {
+    // Only the App Review sample family has a code like this.
+    await env.DB.prepare('INSERT INTO members (id, family_id, role, name, token_hash, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+      .bind(memberId, invite.family_id, invite.role, name, await hashToken(token), now)
+      .run();
+    await track(env, { id: memberId, family_id: invite.family_id, role: invite.role }, 'member_joined', invite.role);
+    return json({ token, member: { id: memberId, role: invite.role, name, familyId: invite.family_id } });
+  }
   const results = await env.DB.batch([
     env.DB.prepare(
       `INSERT INTO members (id, family_id, role, name, token_hash, created_at)
@@ -226,6 +244,7 @@ async function savePushToken(req: Request, env: Env, me: Member): Promise<Respon
 async function removeMember(id: string, env: Env, me: Member): Promise<Response> {
   requireParent(me);
   if (id === me.id) throw new HttpError(400, "You can't remove yourself.");
+  if (id.startsWith('demo-')) throw new HttpError(400, 'This is a sample person and stays in the sample family.');
   // Keep their trips and events; just sign the phone out for good.
   const res = await env.DB.prepare(
     "UPDATE members SET token_hash = 'removed:' || id, push_token = NULL WHERE id = ? AND family_id = ?",
@@ -235,6 +254,53 @@ async function removeMember(id: string, env: Env, me: Member): Promise<Response>
   if (!res.meta.changes) throw new HttpError(404, 'Not found.');
   await track(env, me, 'member_removed');
   return json({ ok: true });
+}
+
+/**
+ * Deletes the signed-in person and everything recorded about them. If they are
+ * the family's last parent, the whole family goes with them, since a family
+ * with no parent has no one to see its drives.
+ */
+async function deleteMe(env: Env, me: Member): Promise<Response> {
+  const others = await env.DB.prepare(
+    `SELECT COUNT(*) AS n FROM members
+     WHERE family_id = ? AND role = 'parent' AND id != ? AND token_hash NOT LIKE 'removed:%'`,
+  )
+    .bind(me.family_id, me.id)
+    .first<{ n: number }>();
+  const wholeFamily = me.role === 'parent' && !others?.n;
+
+  if (me.role === 'driver') {
+    await pushToParents(env, me.family_id, {
+      title: `${me.name} deleted their DriveWatch account`,
+      body: 'Drives from their phone are no longer logged.',
+    }).catch(() => 0);
+  }
+
+  const db = env.DB;
+  if (wholeFamily) {
+    const f = me.family_id;
+    await db.batch([
+      db.prepare('DELETE FROM points WHERE trip_id IN (SELECT id FROM trips WHERE family_id = ?)').bind(f),
+      db.prepare('DELETE FROM events WHERE family_id = ?').bind(f),
+      db.prepare('DELETE FROM usage_events WHERE family_id = ?').bind(f),
+      db.prepare('DELETE FROM trips WHERE family_id = ?').bind(f),
+      db.prepare('DELETE FROM invites WHERE family_id = ?').bind(f),
+      db.prepare('DELETE FROM members WHERE family_id = ?').bind(f),
+      db.prepare('DELETE FROM families WHERE id = ?').bind(f),
+    ]);
+  } else {
+    const m = me.id;
+    await db.batch([
+      db.prepare('DELETE FROM points WHERE trip_id IN (SELECT id FROM trips WHERE member_id = ?)').bind(m),
+      db.prepare('DELETE FROM events WHERE member_id = ?').bind(m),
+      db.prepare('DELETE FROM usage_events WHERE member_id = ?').bind(m),
+      db.prepare('DELETE FROM trips WHERE member_id = ?').bind(m),
+      db.prepare('DELETE FROM invites WHERE created_by = ? OR used_by = ?').bind(m, m),
+      db.prepare('DELETE FROM members WHERE id = ?').bind(m),
+    ]);
+  }
+  return json({ ok: true, familyDeleted: wholeFamily });
 }
 
 // ---- App use counts (our own analytics; nothing goes to Google) ----

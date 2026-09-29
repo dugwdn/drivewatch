@@ -3,6 +3,7 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { AppState, Linking, RefreshControl, ScrollView, Switch, Text, View } from 'react-native';
 import type { LocationPermission } from '../../../shared/types';
+import { confirmDeleteAccount } from '../../lib/account';
 import { api, type TripRow } from '../../lib/api';
 import { Button } from '../../lib/Button';
 import { dayTimeText, durationText, milesText } from '../../lib/format';
@@ -19,6 +20,7 @@ export default function DriverHome() {
   const [waiting, setWaiting] = useState({ points: 0, events: 0 });
   const [trips, setTrips] = useState<TripRow[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState('');
 
   const refresh = useCallback(async () => {
     const session = await getSession();
@@ -111,6 +113,11 @@ export default function DriverHome() {
           </View>
         </View>
       ))}
+
+      <View style={{ marginTop: 24 }}>
+        {!!error && <Text style={ui.error}>{error}</Text>}
+        <Button title="Delete my account" quiet onPress={() => confirmDeleteAccount('driver', setError)} />
+      </View>
     </ScrollView>
   );
 }

@@ -66,3 +66,9 @@ export function sendUsage(): Promise<void> {
     });
   return sending;
 }
+
+/** Throws away unsent counts. Used when the account is deleted. */
+export async function clearUsage(): Promise<void> {
+  queue = [];
+  await AsyncStorage.removeItem(KEY).catch(() => undefined);
+}
