@@ -33,7 +33,7 @@ The main job: tell a parent, within seconds, when the driver's phone is used whi
 
 - Phase 1 code written (PR "Phase 1: drive tracking and phone-use alerts"). Server tested locally end to end. The iPhone build has not been compiled yet (no Mac here; first EAS build will show any Swift errors).
 - Server live (2026-09-29): Worker `drivewatch-api` at https://drivewatch-api.noisy-sunset-3f0d.workers.dev, D1 `drivewatch` with migration 0001 applied. Deployed from Doug's laptop with `npx wrangler deploy` (no Cloudflare token in cloud sessions; workers.dev is blocked by the cloud network policy, so check it with a web fetch).
-- App-use counts (analytics) added on phase-1-core. Live database still needs migration 0002 and a Worker redeploy from Doug's laptop (`npx wrangler d1 migrations apply drivewatch --remote`, then `npx wrangler deploy` in server/). Until then the app quietly keeps its counts on the phone. No screen shows the counts yet.
+- App-use counts (analytics) live 2026-09-29: migration 0002 applied to the live database and Worker redeployed from Doug's laptop. No screen shows the counts yet. If wrangler on the laptop says code 7403 on a D1 command, `npx wrangler logout` then `npx wrangler login` fixes it.
 - Next: first EAS iOS build + TestFlight from Doug's laptop.
 
 ## Plan
