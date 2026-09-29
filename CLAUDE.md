@@ -31,11 +31,12 @@ The main job: tell a parent, within seconds, when the driver's phone is used whi
 ## Current state
 
 - Phase 1 code written (PR "Phase 1: drive tracking and phone-use alerts"). Server tested locally end to end. The iPhone build has not been compiled yet (no Mac here; first EAS build will show any Swift errors).
-- Not live: needs the Cloudflare D1 database and Worker deployed, the real API address in `app.json` > `extra.apiUrl`, and a first EAS build.
+- Server live (2026-09-29): Worker `drivewatch-api` at https://drivewatch-api.noisy-sunset-3f0d.workers.dev, D1 `drivewatch` with migration 0001 applied. Deployed from Doug's laptop with `npx wrangler deploy` (no Cloudflare token in cloud sessions; workers.dev is blocked by the cloud network policy, so check it with a web fetch).
+- Next: first EAS iOS build + TestFlight from Doug's laptop.
 
 ## Plan
 
-1. Go live: create D1 `drivewatch`, put its id in `server/wrangler.toml`, apply migrations, deploy the Worker, set `extra.apiUrl`, first TestFlight build.
+1. Go live: first TestFlight build, then a real test drive.
 2. Real-drive tuning: handling threshold (`shared/phoneUse.ts` HANDLING_RAD_S), drive start/end timing, battery use when idle.
 3. Phase 2: speed vs. posted limit, hard braking, car Bluetooth check, weekly summary.
 4. Phase 3: Apple Family Controls entitlement for app names.

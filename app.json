@@ -38,7 +38,7 @@
       "eas": {
         "projectId": "28602363-d6d0-4c38-b15e-c82e677b96e9"
       },
-      "apiUrl": "https://drivewatch-api.REPLACE-ME.workers.dev"
+      "apiUrl": "https://drivewatch-api.noisy-sunset-3f0d.workers.dev"
     },
     "scheme": "drivewatch",
     "plugins": [
