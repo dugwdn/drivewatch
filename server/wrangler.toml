@@ -1,0 +1,14 @@
+name = "drivewatch-api"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+
+# Runs every 5 minutes to catch phones that go quiet mid-drive.
+[triggers]
+crons = ["*/5 * * * *"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "drivewatch"
+# Filled in when the database is created in Doug's Cloudflare account.
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"

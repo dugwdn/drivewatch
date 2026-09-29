@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android", "web"],
+  "apple": {
+    "modules": ["DriveSensorsModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.drivesensors.DriveSensorsModule"]
+  }
+}
