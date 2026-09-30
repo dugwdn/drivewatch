@@ -13,6 +13,7 @@ The main job: tell a parent, within seconds, when the driver's phone is used whi
 - `modules/drive-sensors/` local native Swift module: unlock/lock (protected data notifications), device rotation for "phone in hand", active call and audio route (ear vs. Bluetooth/CarPlay). Android is a stub.
 - `shared/` pure TypeScript used by both the app and the server: drive start/end detection, phone-use detection, alert wording, shared types.
 - `server/` Cloudflare Worker + D1 (free plan). Every row belongs to a family. Typed events table. Cron every 5 minutes flags phones that go quiet mid-drive.
+- Analytics: our own `usage_events` table (migration 0002), never Google, because drivers are minors and the app holds location. The phone sends only `app_open` and `screen_view` (route pattern, no ids) via `src/lib/usage.ts`; the server records family/invite/rules/passenger/trip-viewed actions itself. Rows carry no location, names, or free text. Allowed actions live in `shared/usage.ts`.
 
 ## Rules
 
@@ -32,7 +33,10 @@ The main job: tell a parent, within seconds, when the driver's phone is used whi
 
 - Phase 1 code written (PR "Phase 1: drive tracking and phone-use alerts"). Server tested locally end to end. The iPhone build has not been compiled yet (no Mac here; first EAS build will show any Swift errors).
 - Server live (2026-09-29): Worker `drivewatch-api` at https://drivewatch-api.noisy-sunset-3f0d.workers.dev, D1 `drivewatch` with migration 0001 applied. Deployed from Doug's laptop with `npx wrangler deploy` (no Cloudflare token in cloud sessions; workers.dev is blocked by the cloud network policy, so check it with a web fetch).
-- First EAS iOS build started from Doug's laptop on 2026-09-29 (Expo account webdesignnerds-team, auto-submit to TestFlight); the latest commit pins react-dom, worklets and reanimated to SDK 57 versions for it. App Store listing is "DriveWatch (d5baeb)" because "DriveWatch" is taken; renaming it to "DriveWatch Family" is on Doug's to-do list.
+- App-use counts (analytics) live 2026-09-29: migration 0002 applied to the live database and Worker redeployed from Doug's laptop. No screen shows the counts yet. If wrangler on the laptop says code 7403 on a D1 command, `npx wrangler logout` then `npx wrangler login` fixes it.
+- First EAS iOS build compiled and reached TestFlight (2026-09-29).
+- App Store submission prepared (2026-09-29): Worker serves /privacy, /support, and a home page (`server/src/pages.ts`; support email in wrangler.toml [vars]). "Delete my account" in the app (`DELETE /v1/me`; the last parent deleting erases the whole family). Migration 0003 adds a made-up "Sample Family" for App Review with the reusable parent code APPREVIEW (members with ids starting `demo-` can't be removed). Listing lives in `store.config.js` (needs `$env:REVIEW_PHONE` when pushing) with screenshots in `store/apple/screenshot/` made from `store/source/`. Steps for Doug: /mnt/project-files/DriveWatch/app-store-steps.md.
+- Next: Doug applies 0003 + deploys, builds, runs `npx eas-cli@latest metadata:push`, then App Privacy, price, build, and Add for Review in App Store Connect.
 - Decisions and why: `docs/adr/`.
 
 ## Plan
@@ -43,4 +47,4 @@ The main job: tell a parent, within seconds, when the driver's phone is used whi
 4. Phase 3: Apple Family Controls entitlement for app names.
 5. Later: Android, payments, parent website, move Apple account to the company.
 
-Before launch (lawyer items, not blocking): terms and privacy policy for other families, minors' location data rules, data retention rule.
+Before launch (lawyer items, not blocking): terms and privacy policy for other families (must mention the app-use counts), minors' location data rules, data retention rule.

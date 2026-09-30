@@ -65,6 +65,12 @@ export async function enqueue(add: {
   await save();
 }
 
+/** Throws away everything not yet sent. Used when the account is deleted. */
+export async function clearQueue(): Promise<void> {
+  memory = { ...EMPTY, trips: {}, points: [], events: [] };
+  await AsyncStorage.multiRemove([KEY, RULES_KEY]);
+}
+
 export async function pending(): Promise<{ points: number; events: number }> {
   const q = await load();
   return { points: q.points.length, events: q.events.length };

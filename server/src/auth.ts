@@ -3,6 +3,8 @@
 
 export interface Env {
   DB: D1Database;
+  /** Shown on the support and privacy pages. */
+  SUPPORT_EMAIL?: string;
 }
 
 export interface Member {
