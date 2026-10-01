@@ -37,6 +37,7 @@ The main job: tell a parent, within seconds, when the driver's phone is used whi
 - First EAS iOS build compiled and reached TestFlight (2026-09-29).
 - App Store submission prepared (2026-09-29): Worker serves /privacy, /support, and a home page (`server/src/pages.ts`; support email in wrangler.toml [vars]). "Delete my account" in the app (`DELETE /v1/me`; the last parent deleting erases the whole family). Migration 0003 adds a made-up "Sample Family" for App Review with the reusable parent code APPREVIEW (members with ids starting `demo-` can't be removed). Listing lives in `store.config.js` (needs `$env:REVIEW_PHONE` when pushing) with screenshots in `store/apple/screenshot/` made from `store/source/`. Steps for Doug: /mnt/project-files/DriveWatch/app-store-steps.md.
 - Next: Doug applies 0003 + deploys, builds, runs `npx eas-cli@latest metadata:push`, then App Privacy, price, build, and Add for Review in App Store Connect.
+- Decisions and why: `docs/adr/`.
 
 ## Plan
 
