@@ -2,10 +2,10 @@
 // everything this phone kept, so nothing is sent afterwards.
 
 import { Alert } from 'react-native';
-import { router } from 'expo-router';
 import { clearQueue } from '../tracking/queue';
 import { stopTracking } from '../tracking/tracker';
 import { api } from './api';
+import { startOver } from './BackButton';
 import { clearSession } from './session';
 import { clearUsage } from './usage';
 
@@ -30,8 +30,8 @@ export function confirmDeleteAccount(role: 'parent' | 'driver', onError: (messag
         await clearQueue().catch(() => undefined);
         await clearUsage();
         await clearSession();
-        router.replace('/welcome');
+        startOver('/welcome');
       },
     },
-  ]);
+  ], { cancelable: true });
 }

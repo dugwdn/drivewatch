@@ -3,12 +3,22 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import { api, type TripDetail } from '../../../lib/api';
+import { BackToHomeIfFirst } from '../../../lib/BackButton';
 import { dayTimeText, durationText, eventLabel, milesText, speedText, timeText } from '../../../lib/format';
 import { colors, ui } from '../../../lib/theme';
 
 const SHOWN = new Set(['phone_unlocked', 'phone_handling', 'handheld_call', 'over_speed', 'signal_lost']);
 
 export default function TripScreen() {
+  return (
+    <>
+      <BackToHomeIfFirst home="/parent" />
+      <Trip />
+    </>
+  );
+}
+
+function Trip() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [data, setData] = useState<TripDetail | null>(null);
   const [error, setError] = useState('');

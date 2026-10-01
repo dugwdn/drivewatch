@@ -1,15 +1,24 @@
-import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, Share, Text, View } from 'react-native';
 import type { FamilyRules, Role } from '../../../shared/types';
 import { confirmDeleteAccount } from '../../lib/account';
 import { api, type FamilyInfo } from '../../lib/api';
+import { BackToHomeIfFirst, startOver } from '../../lib/BackButton';
 import { Button } from '../../lib/Button';
 import { agoText } from '../../lib/format';
 import { clearSession } from '../../lib/session';
 import { colors, ui } from '../../lib/theme';
 
-export default function Settings() {
+export default function SettingsScreen() {
+  return (
+    <>
+      <BackToHomeIfFirst home="/parent" />
+      <Settings />
+    </>
+  );
+}
+
+function Settings() {
   const [info, setInfo] = useState<FamilyInfo | null>(null);
   const [rules, setRules] = useState<FamilyRules | null>(null);
   const [invite, setInvite] = useState<{ code: string; role: Role; expiresAt: number } | null>(null);
@@ -65,7 +74,7 @@ export default function Settings() {
           await load();
         },
       },
-    ]);
+    ], { cancelable: true });
   }
 
   function signOut() {
@@ -76,10 +85,10 @@ export default function Settings() {
         style: 'destructive',
         onPress: async () => {
           await clearSession();
-          router.replace('/welcome');
+          startOver('/welcome');
         },
       },
-    ]);
+    ], { cancelable: true });
   }
 
   if (!info || !rules) {
