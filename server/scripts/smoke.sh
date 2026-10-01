@@ -18,6 +18,12 @@ echo "trip detail (driver): $(curl -s $B/v1/trips/trip-$NOW -H "authorization: B
 echo "driver cannot invite: $(curl -s -XPOST $B/v1/invites -H "authorization: Bearer $DT" -d '{}')"
 echo "passenger: $(curl -s -XPOST $B/v1/trips/trip-$NOW/passenger -H "authorization: Bearer $DT" -d '{"passenger":true}')"
 echo "privacy page: $(curl -s -o /dev/null -w '%{http_code}' $B/privacy)"
-echo "review code joins sample family: $(curl -s -XPOST $B/v1/join -H "$J" -d '{"code":"APPREVIEW","name":"Reviewer"}' | jq -r .member.familyId)"
+RT=$(curl -s -XPOST $B/v1/join -H "$J" -d '{"code":"APPREVIEW","name":"Reviewer"}' | jq -r .token)
+echo "review code joins sample family: $(curl -s $B/v1/family -H "authorization: Bearer $RT" | jq -r .family.id)"
+echo "sample family can't invite: $(curl -s -XPOST $B/v1/invites -H "authorization: Bearer $RT" -H "$J" -d '{"role":"driver"}')"
+echo "sample family can't change rules: $(curl -s -XPATCH $B/v1/family -H "authorization: Bearer $RT" -H "$J" -d '{"name":"Hacked"}')"
+echo "sample family can't remove: $(curl -s -XDELETE $B/v1/members/demo-sam -H "authorization: Bearer $RT")"
+echo "sample family can't mark passenger: $(curl -s -XPOST $B/v1/trips/demo-trip-1/passenger -H "authorization: Bearer $RT" -d '{"passenger":true}')"
+echo "reviewer deletes only themselves: $(curl -s -XDELETE $B/v1/me -H "authorization: Bearer $RT")"
 echo "driver deletes account: $(curl -s -XDELETE $B/v1/me -H "authorization: Bearer $DT")"
 echo "last parent deletes family: $(curl -s -XDELETE $B/v1/me -H "authorization: Bearer $PT")"

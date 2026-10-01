@@ -13,6 +13,8 @@ const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const SIGNAL_LOST_AFTER_MS = 6 * 60 * 1000;
 const CLOSE_STALE_TRIP_AFTER_MS = 2 * 60 * 60 * 1000;
 const PERMISSIONS: LocationPermission[] = ['always', 'when_in_use', 'denied', 'unknown'];
+/** Driving routes (GPS points) older than this are deleted. Trip summaries and alerts stay. */
+const ROUTE_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
 
 export default {
   async fetch(req: Request, env: Env): Promise<Response> {
@@ -25,8 +27,11 @@ export default {
     }
   },
 
-  async scheduled(_controller: ScheduledController, env: Env): Promise<void> {
-    await checkQuietPhones(env, Date.now());
+  async scheduled(controller: ScheduledController, env: Env): Promise<void> {
+    const now = Date.now();
+    await checkQuietPhones(env, now);
+    // Once a day (the 07:00 UTC run), not every 5 minutes, to keep D1 reads low.
+    if (isDailyRun(controller.scheduledTime || now)) await deleteOldRoutes(env, now);
   },
 };
 
@@ -65,8 +70,10 @@ async function route(req: Request, env: Env): Promise<Response> {
   if (method === 'GET' && (path === '/privacy' || path === '/support' || path === '')) return page(path, env);
 
   // No sign-in needed for these two.
-  if (method === 'POST' && path === '/v1/families') return createFamily(req, env);
-  if (method === 'POST' && path === '/v1/join') return join(req, env);
+  if (method === 'POST' && (path === '/v1/families' || path === '/v1/join')) {
+    await limitSignUps(req, env);
+    return path === '/v1/join' ? join(req, env) : createFamily(req, env);
+  }
 
   const me = await memberFromRequest(req, env);
   if (!me) throw new HttpError(401, 'Please sign in again.');
@@ -94,6 +101,32 @@ async function route(req: Request, env: Env): Promise<Response> {
 
 function requireParent(me: Member) {
   if (me.role !== 'parent') throw new HttpError(403, 'Only a parent can do that.');
+}
+
+/**
+ * The App Review sample family (migration 0003) can be joined by anyone with
+ * the public code APPREVIEW, so people in it can only look around.
+ */
+export function isSampleFamily(familyId: string): boolean {
+  return familyId.startsWith('demo-');
+}
+
+function requireRealFamily(me: Member) {
+  if (isSampleFamily(me.family_id)) {
+    throw new HttpError(403, "This is a sample family for looking around. Start your own family to change things.");
+  }
+}
+
+/**
+ * 10 sign-up tries (new family or join code) per minute per network address,
+ * so join codes can't be guessed by brute force and spam can't burn D1 writes.
+ * Skipped when the binding is missing (local tests).
+ */
+async function limitSignUps(req: Request, env: Env): Promise<void> {
+  if (!env.SIGNUP_LIMITER) return;
+  const ip = req.headers.get('CF-Connecting-IP') ?? 'unknown';
+  const { success } = await env.SIGNUP_LIMITER.limit({ key: ip });
+  if (!success) throw new HttpError(429, 'Too many tries. Wait a minute and try again.');
 }
 
 async function rulesFor(env: Env, familyId: string): Promise<FamilyRules> {
@@ -193,6 +226,7 @@ async function getFamily(env: Env, me: Member): Promise<Response> {
 
 async function updateFamily(req: Request, env: Env, me: Member): Promise<Response> {
   requireParent(me);
+  requireRealFamily(me);
   const b = await body<{ name?: string; phoneSpeedMph?: number; maxSpeedMph?: number }>(req);
   const current = await rulesFor(env, me.family_id);
   const phone = clampInt(b.phoneSpeedMph, 5, 60, current.phoneSpeedMph);
@@ -216,6 +250,7 @@ function clampInt(v: unknown, min: number, max: number, fallback: number): numbe
 
 async function createInvite(req: Request, env: Env, me: Member): Promise<Response> {
   requireParent(me);
+  requireRealFamily(me);
   const b = await body<{ role?: string }>(req);
   const role = b.role === 'parent' ? 'parent' : 'driver';
   const expiresAt = Date.now() + INVITE_TTL_MS;
@@ -243,6 +278,7 @@ async function savePushToken(req: Request, env: Env, me: Member): Promise<Respon
 
 async function removeMember(id: string, env: Env, me: Member): Promise<Response> {
   requireParent(me);
+  requireRealFamily(me);
   if (id === me.id) throw new HttpError(400, "You can't remove yourself.");
   if (id.startsWith('demo-')) throw new HttpError(400, 'This is a sample person and stays in the sample family.');
   // Keep their trips and events; just sign the phone out for good.
@@ -268,7 +304,8 @@ async function deleteMe(env: Env, me: Member): Promise<Response> {
   )
     .bind(me.family_id, me.id)
     .first<{ n: number }>();
-  const wholeFamily = me.role === 'parent' && !others?.n;
+  // The sample family is never erased; a reviewer deleting their account removes only themselves.
+  const wholeFamily = me.role === 'parent' && !others?.n && !isSampleFamily(me.family_id);
 
   if (me.role === 'driver') {
     await pushToParents(env, me.family_id, {
@@ -349,6 +386,7 @@ const POINT_ROWS_PER_INSERT = Math.floor(100 / POINT_COLS);
 
 async function ingest(req: Request, env: Env, me: Member): Promise<Response> {
   if (me.role !== 'driver') throw new HttpError(403, 'Only a driver phone sends drives.');
+  requireRealFamily(me);
   const b = await body<IngestBody>(req);
   const now = Date.now();
   const trips = Array.isArray(b.trips) ? b.trips.slice(0, MAX_TRIPS) : [];
@@ -607,6 +645,7 @@ async function listEvents(url: URL, env: Env, me: Member): Promise<Response> {
 }
 
 async function markPassenger(req: Request, id: string, env: Env, me: Member): Promise<Response> {
+  requireRealFamily(me);
   const b = await body<{ passenger?: boolean }>(req);
   const res = await env.DB.prepare(
     `UPDATE trips SET passenger = ? WHERE id = ? AND family_id = ? AND (? = 'parent' OR member_id = ?)`,
@@ -652,4 +691,26 @@ export async function checkQuietPhones(env: Env, now: number): Promise<void> {
     `UPDATE members SET active_trip_id = NULL
      WHERE active_trip_id IS NOT NULL AND active_trip_id IN (SELECT id FROM trips WHERE ended_at IS NOT NULL)`,
   ).run();
+}
+
+// ---- Once a day ----
+
+export function isDailyRun(scheduledTime: number): boolean {
+  const d = new Date(scheduledTime);
+  return d.getUTCHours() === 7 && d.getUTCMinutes() < 5;
+}
+
+/**
+ * Deletes GPS points from drives that started more than 90 days ago (a minor's
+ * location; Doug's rule 2026-10-01). Trip summaries and alerts are kept. Goes
+ * through trips so it uses the points primary key instead of scanning every
+ * point. The sample family is left alone.
+ */
+export async function deleteOldRoutes(env: Env, now: number): Promise<void> {
+  await env.DB.prepare(
+    `DELETE FROM points WHERE trip_id IN
+       (SELECT id FROM trips WHERE started_at < ? AND family_id NOT LIKE 'demo-%')`,
+  )
+    .bind(now - ROUTE_RETENTION_MS)
+    .run();
 }

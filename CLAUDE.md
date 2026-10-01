@@ -48,6 +48,7 @@ Phone back button stays in the app: every in-app screen, step, or modal is somet
 - First EAS iOS build compiled and reached TestFlight (2026-09-29).
 - App Store submission prepared (2026-09-29): Worker serves /privacy, /support, and a home page (`server/src/pages.ts`; support email in wrangler.toml [vars]). "Delete my account" in the app (`DELETE /v1/me`; the last parent deleting erases the whole family). Migration 0003 adds a made-up "Sample Family" for App Review with the reusable parent code APPREVIEW (members with ids starting `demo-` can't be removed). Listing lives in `store.config.js` (needs `$env:REVIEW_PHONE` when pushing) with screenshots in `store/apple/screenshot/` made from `store/source/`. Steps for Doug: /mnt/project-files/DriveWatch/app-store-steps.md.
 - Next: Doug applies 0003 + deploys, builds, runs `npx eas-cli@latest metadata:push`, then App Privacy, price, build, and Add for Review in App Store Connect.
+- Review fixes (2026-10-01, Doug approved): the sample family is look-around only (no invites, rule or name changes, removals, passenger marks, or drive uploads; a reviewer deleting their account never erases it). Sign-ups (`/v1/families`, `/v1/join`) are limited to 10 tries per minute per address with the free Workers rate limit binding `SIGNUP_LIMITER` (wrangler.toml). GPS points from drives older than 90 days are deleted once a day on the 07:00 UTC cron run (`deleteOldRoutes`); trips and alerts stay; privacy page says so. Goes live with the next laptop `npx wrangler deploy` (no new iPhone build).
 - Phone back button rule (2026-10-01): Android back steps back inside the app, Back arrow on every non-home screen; see the section above.
 - Decisions and why: `docs/adr/`.
 
@@ -59,4 +60,4 @@ Phone back button stays in the app: every in-app screen, step, or modal is somet
 4. Phase 3: Apple Family Controls entitlement for app names.
 5. Later: Android, payments, parent website, move Apple account to the company.
 
-Before launch (lawyer items, not blocking): terms and privacy policy for other families (must mention the app-use counts), minors' location data rules, data retention rule.
+Before launch (lawyer items, not blocking): terms and privacy policy for other families (must mention the app-use counts), minors' location data rules, confirm the 90-day route rule.
