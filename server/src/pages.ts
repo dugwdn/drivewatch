@@ -89,7 +89,8 @@ outside the family can see a family's data.</p>
 Apple Push Notifications. They receive only what they need to do that job.</p>
 
 <h2>How long we keep it</h2>
-<p>We keep a family's data while the family uses DriveWatch. Anyone can delete their account in the app at any time,
+<p>The map route of each drive (its GPS points) is deleted automatically 90 days after the drive. Trip summaries
+and alerts stay while the family uses DriveWatch. Anyone can delete their account in the app at any time,
 which erases their data from our server. If the family's only parent deletes their account, the whole family is erased.</p>
 
 <h2>Teen drivers</h2>

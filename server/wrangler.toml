@@ -12,5 +12,14 @@ database_name = "drivewatch"
 database_id = "e679849b-45aa-4671-878c-16837fd4371a"
 migrations_dir = "migrations"
 
+# 10 sign-up tries (new family or join code) per minute per network address.
+# Free on every plan; counts live in Cloudflare, not D1.
+[[ratelimits]]
+name = "SIGNUP_LIMITER"
+namespace_id = "1001"
+  [ratelimits.simple]
+  limit = 10
+  period = 60
+
 [vars]
 SUPPORT_EMAIL = "doug@webdesignnerd.com"
