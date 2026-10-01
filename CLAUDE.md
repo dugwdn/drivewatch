@@ -23,6 +23,17 @@ The main job: tell a parent, within seconds, when the driver's phone is used whi
 - The driver is never asked to tap anything while the car is moving.
 - Stay on free tiers (Cloudflare free, Expo free). The Apple Developer account is Doug's ($99/yr).
 
+## Phone back button (standing rule, Doug 2026-10-01)
+
+Phone back button stays in the app: every in-app screen, step, or modal is something the phone's back control steps out of, instead of closing the app.
+
+- Android back button/gesture steps back one screen or closes the open modal/dialog, and leaves the app only from a home screen (welcome's first step, driver home, parent home). Never trap the user there.
+- New screens are Expo Router `Stack` screens: the stack handles Android back and iOS swipe-back (keep `gestureEnabled` on). In-screen steps, panels, and sheets use `useBackClose(open, onClose)`. RN `<Modal>` uses `onRequestClose`. `Alert.alert` gets `{ cancelable: true }`.
+- Every non-home screen shows a visible Back arrow top-left (44pt, accessibilityLabel "Back"): the native header back on stack screens, `BackButton` as `headerLeft` for in-screen steps. Non-home stack screens render `<BackToHomeIfFirst home="/parent" />` so a screen opened from a drivewatch:// link still has Back, and back goes home first instead of closing the app.
+- Leaving signed-in screens (sign out, delete account) uses `startOver('/welcome')` so back can't return to them.
+- Web: there is no web build (react-native-web isn't installed). If one is added, every screen/modal must push a browser history entry, a deep link's back goes home first, back from home leaves normally, no beforeunload prompts.
+- Helpers: `src/lib/useBackClose.ts`, `src/lib/BackButton.tsx` (`BackButton`, `BackToHomeIfFirst`, `startOver`).
+
 ## Commands
 
 - App typecheck: `npx tsc --noEmit`
@@ -37,6 +48,7 @@ The main job: tell a parent, within seconds, when the driver's phone is used whi
 - First EAS iOS build compiled and reached TestFlight (2026-09-29).
 - App Store submission prepared (2026-09-29): Worker serves /privacy, /support, and a home page (`server/src/pages.ts`; support email in wrangler.toml [vars]). "Delete my account" in the app (`DELETE /v1/me`; the last parent deleting erases the whole family). Migration 0003 adds a made-up "Sample Family" for App Review with the reusable parent code APPREVIEW (members with ids starting `demo-` can't be removed). Listing lives in `store.config.js` (needs `$env:REVIEW_PHONE` when pushing) with screenshots in `store/apple/screenshot/` made from `store/source/`. Steps for Doug: /mnt/project-files/DriveWatch/app-store-steps.md.
 - Next: Doug applies 0003 + deploys, builds, runs `npx eas-cli@latest metadata:push`, then App Privacy, price, build, and Add for Review in App Store Connect.
+- Phone back button rule (2026-10-01): Android back steps back inside the app, Back arrow on every non-home screen; see the section above.
 - Decisions and why: `docs/adr/`.
 
 ## Plan

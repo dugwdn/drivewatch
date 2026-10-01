@@ -1,10 +1,12 @@
-import { router } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, View } from 'react-native';
 import { api, type JoinResult } from '../lib/api';
+import { BackButton } from '../lib/BackButton';
 import { Button } from '../lib/Button';
 import { saveSession } from '../lib/session';
 import { ui } from '../lib/theme';
+import { useBackClose } from '../lib/useBackClose';
 
 type Mode = 'choose' | 'start' | 'join';
 
@@ -15,6 +17,11 @@ export default function Welcome() {
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const back = () => {
+    setError('');
+    setMode('choose');
+  };
+  useBackClose(mode !== 'choose', back);
 
   async function finish(result: JoinResult) {
     await saveSession({
@@ -42,6 +49,7 @@ export default function Welcome() {
 
   return (
     <KeyboardAvoidingView style={ui.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <Stack.Screen options={{ headerLeft: mode === 'choose' ? undefined : () => <BackButton onPress={back} /> }} />
       <ScrollView contentContainerStyle={ui.pad} keyboardShouldPersistTaps="handled">
         <Text style={ui.h1}>Safer drives, together.</Text>
         <Text style={ui.body}>
@@ -79,7 +87,6 @@ export default function Welcome() {
             <TextInput style={ui.input} placeholder="Your first name" value={name} onChangeText={setName} textContentType="givenName" />
             {!!error && <Text style={ui.error}>{error}</Text>}
             <Button title={mode === 'start' ? 'Start' : 'Join'} onPress={submit} busy={busy} />
-            <Button title="Back" quiet onPress={() => setMode('choose')} />
           </View>
         )}
       </ScrollView>
