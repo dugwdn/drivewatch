@@ -23,6 +23,20 @@ The main job: tell a parent, within seconds, when the driver's phone is used whi
 - The driver is never asked to tap anything while the car is moving.
 - Stay on free tiers (Cloudflare free, Expo free). The Apple Developer account is Doug's ($99/yr).
 
+## Docs rule (Doug, 2026-10-01, standing)
+This project keeps the docs a real company would. Update the matching doc in the same PR as any change it describes. Never rewrite an accepted decision record; add a new one that supersedes it.
+
+| Doc | Where |
+|---|---|
+| PRD (product requirements) | `docs/PRD.md` |
+| Product roadmap | `docs/roadmap.md` |
+| TRD (technical design + technical roadmap) | `docs/TRD.md` (includes privacy and data handling) |
+| Decision records (ADRs) | `docs/adr/` (index: `docs/adr/README.md`) |
+| README / how-to | `README.md` |
+| Changelog | `CHANGELOG.md` |
+| Runbook | `docs/runbook.md` |
+| Test plan | `docs/test-plan.md` |
+
 ## Phone back button (standing rule, Doug 2026-10-01)
 
 Phone back button stays in the app: every in-app screen, step, or modal is something the phone's back control steps out of, instead of closing the app.
