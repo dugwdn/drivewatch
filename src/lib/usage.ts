@@ -1,6 +1,8 @@
-// App use counts, sent to our own server (not Google). Only two things are
-// counted on the phone: the app opening and which screen was shown. Screen
-// names are route patterns like "parent/trip/[id]", never ids or places.
+// App use counts, sent to our own server. Only two things are counted on the
+// phone: the app opening and which screen was shown. Screen names are route
+// patterns like "parent/trip/[id]", never ids or places. The server passes the
+// screen names on to Google Analytics as anonymous counts (ADR 0010), with a
+// random id made on this install for that alone (never the account or token).
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
@@ -9,6 +11,7 @@ import { api, ApiError } from './api';
 import { getSession } from './session';
 
 const KEY = 'drivewatch.usage.v1';
+const GA_KEY = 'drivewatch.ga-install.v1';
 const MAX_KEPT = 500;
 const SEND_EVERY_MS = 60_000;
 
@@ -35,6 +38,22 @@ async function save(): Promise<void> {
   }
 }
 
+let gaId: string | null = null;
+/** A random id for this install, only for anonymous GA counts. Not linked to the account. */
+async function gaInstallId(): Promise<string | undefined> {
+  if (gaId) return gaId;
+  try {
+    gaId = await AsyncStorage.getItem(GA_KEY);
+    if (!gaId) {
+      gaId = Crypto.randomUUID();
+      await AsyncStorage.setItem(GA_KEY, gaId);
+    }
+    return gaId;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function trackUsage(action: 'app_open' | 'screen_view', object?: string): Promise<void> {
   const q = await load();
   q.push({ id: Crypto.randomUUID(), action, object: object ?? null, t: Date.now() });
@@ -50,7 +69,7 @@ export function sendUsage(): Promise<void> {
     if (!q.length || !(await getSession())) return;
     const batch = q.slice(0, 100);
     try {
-      await api.usage(batch);
+      await api.usage(batch, await gaInstallId());
       q.splice(0, batch.length);
     } catch (err) {
       // An older server without counts: drop them instead of piling up.
@@ -70,5 +89,7 @@ export function sendUsage(): Promise<void> {
 /** Throws away unsent counts. Used when the account is deleted. */
 export async function clearUsage(): Promise<void> {
   queue = [];
+  gaId = null;
   await AsyncStorage.removeItem(KEY).catch(() => undefined);
+  await AsyncStorage.removeItem(GA_KEY).catch(() => undefined);
 }

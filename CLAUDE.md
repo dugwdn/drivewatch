@@ -13,7 +13,7 @@ The main job: tell a parent, within seconds, when the driver's phone is used whi
 - `modules/drive-sensors/` local native Swift module: unlock/lock (protected data notifications), device rotation for "phone in hand", active call and audio route (ear vs. Bluetooth/CarPlay). Android is a stub.
 - `shared/` pure TypeScript used by both the app and the server: drive start/end detection, phone-use detection, alert wording, shared types.
 - `server/` Cloudflare Worker + D1 (free plan). Every row belongs to a family. Typed events table. Cron every 5 minutes flags phones that go quiet mid-drive.
-- Analytics: our own `usage_events` table (migration 0002), never Google, because drivers are minors and the app holds location. The phone sends only `app_open` and `screen_view` (route pattern, no ids) via `src/lib/usage.ts`; the server records family/invite/rules/passenger/trip-viewed actions itself. Rows carry no location, names, or free text. Allowed actions live in `shared/usage.ts`.
+- Analytics: our own `usage_events` table (migration 0002) is the real count. Since 2026-10-06 (ADR 0010) the Worker also forwards anonymous screen names to GA4 (Measurement Protocol, random per-install id, nothing else) and the public pages carry the GA4 tag; both off while `GA4_ID` / `GA4_API_SECRET` are empty. The phone sends only `app_open` and `screen_view` (route pattern, no ids) via `src/lib/usage.ts`; the server records family/invite/rules/passenger/trip-viewed actions itself. Rows carry no location, names, or free text. Allowed actions live in `shared/usage.ts`.
 
 ## Rules
 
@@ -64,6 +64,7 @@ Phone back button stays in the app: every in-app screen, step, or modal is somet
 - Next: Doug applies 0003 + deploys, builds, runs `npx eas-cli@latest metadata:push`, then App Privacy, price, build, and Add for Review in App Store Connect.
 - Review fixes (2026-10-01, Doug approved): the sample family is look-around only (no invites, rule or name changes, removals, passenger marks, or drive uploads; a reviewer deleting their account never erases it). Sign-ups (`/v1/families`, `/v1/join`) are limited to 10 tries per minute per address with the free Workers rate limit binding `SIGNUP_LIMITER` (wrangler.toml). GPS points from drives older than 90 days are deleted once a day on the 07:00 UTC cron run (`deleteOldRoutes`); trips and alerts stay; privacy page says so. Goes live with the next laptop `npx wrangler deploy` (no new iPhone build).
 - Phone back button rule (2026-10-01): Android back steps back inside the app, Back arrow on every non-home screen; see the section above.
+- GA4 (2026-10-06, ADR 0010, off until Doug sets them): `GA4_ID` in `server/wrangler.toml` [vars] and `npx wrangler secret put GA4_API_SECRET`. Web tag on /, /privacy, /support; app screen names forwarded by the Worker (`shared/ga.ts`). Before shipping the app build: App Store privacy label adds Analytics: Product Interaction, not linked, not tracking.
 - Decisions and why: `docs/adr/`.
 
 ## Plan

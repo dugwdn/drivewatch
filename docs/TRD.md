@@ -118,7 +118,7 @@ The phone never sees or sends which app was opened, message content, or call con
 
 - **Cloudflare** stores the D1 database and runs the Worker. The privacy page states data is stored in the United States.
 - **Expo push service and Apple Push Notifications** receive the push token and the alert text. Alert text has the driver's first name and speed (for example "Sam's phone was unlocked at 41 mph."). It does not include coordinates.
-- **No third-party analytics.** App-use counts go to our own table ([ADR 0007](adr/0007-own-usage-counts-not-google.md)). The phone sends only `app_open` and `screen_view` with route patterns like `parent/trip/[id]`, never ids. The server rejects other actions and malformed screen names (`shared/usage.ts` `cleanUsage`).
+- **Analytics.** App-use counts go to our own table ([ADR 0007](adr/0007-own-usage-counts-not-google.md)). The Worker also forwards screen names only to GA4's Measurement Protocol with a random per-install id, and the public pages carry the GA4 tag; both off while `GA4_ID`/`GA4_API_SECRET` are empty ([ADR 0010](adr/0010-anonymous-ga4-screen-counts.md)). No Google SDK in the app. The phone sends only `app_open` and `screen_view` with route patterns like `parent/trip/[id]`, never ids. The server rejects other actions and malformed screen names (`shared/usage.ts` `cleanUsage`).
 - Maps on the parent phone are drawn by `react-native-maps` (Apple Maps on iPhone).
 
 ### On the phone
