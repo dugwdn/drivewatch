@@ -2,6 +2,10 @@
 
 Newest first. Dates are when the change landed on `phase-1-core` (UTC). PR numbers are GitHub pull requests in dugwdn/drivewatch.
 
+## 2026-10-05
+
+Done from Doug's laptop, not a code change on `phase-1-core` (the settings fixes are in draft PR #7): migration 0003 applied live, Worker redeployed with the 2026-10-01 review fixes, iOS 1.0.0 build 4 uploaded to App Store Connect, App Store listing pushed. Submit for review is still to do in App Store Connect.
+
 ## 2026-10-01
 
 - Docs: added PRD, roadmap, TRD (with privacy and data handling), runbook, test plan, this changelog, README, and ADRs 0007 to 0009. Docs rule added to `CLAUDE.md`.
