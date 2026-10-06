@@ -17,7 +17,7 @@ A parent can't see if a new driver uses their phone while the car is moving. Riv
 1. Live phone-use alert to parents, within seconds, at or above the family's phone-use speed (default 25 mph).
 2. Drives log on their own. The driver never taps anything while moving ([ADR 0005](adr/0005-never-ask-driver-while-moving.md)).
 3. Parents learn when tracking is switched off or the phone goes quiet mid-drive.
-4. Keep a minor's data inside the family, with no outside analytics, and delete old routes ([ADR 0007](adr/0007-own-usage-counts-not-google.md), [ADR 0008](adr/0008-delete-routes-after-90-days.md)).
+4. Keep a minor's data inside the family (only anonymous screen counts go to GA4, [ADR 0010](adr/0010-anonymous-ga4-screen-counts.md)), and delete old routes ([ADR 0007](adr/0007-own-usage-counts-not-google.md), [ADR 0008](adr/0008-delete-routes-after-90-days.md)).
 5. Run at $0 a month at family size (Cloudflare free plan, Expo free tier; Apple Developer account is $99 a year) ([ADR 0003](adr/0003-cloudflare-free-plan.md)).
 
 ## Non-goals (do not build)
@@ -25,7 +25,7 @@ A parent can't see if a new driver uses their phone while the car is moving. Riv
 - Crash detection or calling 911 ([ADR 0006](adr/0006-not-building-crash-detection.md)).
 - Naming which app was opened, until Apple's Family Controls permission is granted (phase 3). Alerts never claim more than the phone tells us.
 - Any prompt to the driver while the car is moving.
-- Google Analytics or any third-party analytics or ad SDK.
+- Any third-party analytics or ad SDK in the app, or any driving, location or family data sent to analytics.
 - A web app. There is no web build (react-native-web is not installed).
 - Android drivers for now. The Android sensor module is a stub. A parked branch `android-parent-later` has an Android parent side only.
 

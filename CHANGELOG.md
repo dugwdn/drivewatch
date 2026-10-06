@@ -2,6 +2,10 @@
 
 Newest first. Dates are when the change landed on `phase-1-core` (UTC). PR numbers are GitHub pull requests in dugwdn/drivewatch.
 
+## Unreleased
+
+- Google Analytics 4, off until Doug sets the ID: the public pages (home, privacy, support) get the GA4 tag, and the server passes on anonymous app screen counts (screen name only, a random per-install id, nothing about drives, location or the family). Privacy page updated. ADR 0010.
+
 ## 2026-10-01
 
 - Docs: added PRD, roadmap, TRD (with privacy and data handling), runbook, test plan, this changelog, README, and ADRs 0007 to 0009. Docs rule added to `CLAUDE.md`.

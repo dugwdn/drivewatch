@@ -1,20 +1,21 @@
 // Public web pages Apple asks for: a privacy policy and a support page.
 // Plain HTML served by the same Worker, so there is nothing else to host.
 
+import { gaWebTag } from '../../shared/ga';
 import type { Env } from './auth';
 
-const UPDATED = 'September 29, 2026';
+const UPDATED = 'October 6, 2026';
 
 export function page(path: string, env: Env): Response {
   const email = env.SUPPORT_EMAIL ?? '';
   const mail = email ? `<a href="mailto:${email}">${email}</a>` : 'the email on our App Store listing';
   const body = path === '/privacy' ? privacy(mail) : path === '/support' ? support(mail) : home();
-  return new Response(shell(body), {
+  return new Response(shell(body, gaWebTag(env.GA4_ID)), {
     headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=300' },
   });
 }
 
-function shell(body: string): string {
+function shell(body: string, ga = ''): string {
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>DriveWatch</title>
@@ -26,7 +27,7 @@ main{max-width:720px;margin:0 auto;padding:24px 16px 64px}
 h1{font-size:30px;margin:8px 0 4px}h2{font-size:21px;margin:28px 0 6px}
 p,li{color:var(--text)}.muted{color:var(--muted)}a{color:var(--brand)}
 nav a{margin-right:16px}table{border-collapse:collapse;width:100%}td,th{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;vertical-align:top}
-</style></head><body><main>
+</style>${ga}</head><body><main>
 <nav><a href="/">DriveWatch</a><a href="/privacy">Privacy</a><a href="/support">Support</a></nav>
 ${body}
 </main></body></html>`;
@@ -67,7 +68,7 @@ function privacy(mail: string): string {
   return `<h1>Privacy policy</h1>
 <p class="muted">Last updated ${UPDATED}</p>
 <p>DriveWatch helps a family see how its new driver drives. Everything it records is shared only inside that family.
-We do not sell data, show ads, or use outside analytics or tracking services.</p>
+We do not sell data, show ads, or track you across other apps or websites.</p>
 
 <h2>What we collect</h2>
 <table>
@@ -80,13 +81,20 @@ We do not sell data, show ads, or use outside analytics or tracking services.</p
 <tr><td>App-use counts: when the app is opened, which screen is shown, and actions like making an invite code or changing a rule</td><td>To see which parts of the app are used and fix what isn't working. These counts hold no location, names, or typed text.</td></tr>
 </table>
 
+<h2>Google Analytics</h2>
+<p>Google Analytics counts anonymous visits: which of these web pages and which app screens are viewed (by a fixed
+screen name such as "Drive", never what is on it), the device type, and a rough region Google works out itself. App
+screen counts go from our server to Google with a random number made for this one purpose on each install, not
+your account. Google never gets location, speed, drives, phone-use alerts, names, or anything about the driver or
+parent. Ad personalization and Google signals are off, and no personal information is sent.</p>
+
 <h2>Who can see it</h2>
 <p>Parents in a family see that family's drivers, drives, and alerts. A driver sees only their own drives. No one
 outside the family can see a family's data.</p>
 
 <h2>Services we use</h2>
 <p>Data is stored on Cloudflare's servers in the United States. Alerts are sent through Expo's push service and
-Apple Push Notifications. They receive only what they need to do that job.</p>
+Apple Push Notifications. Google Analytics receives the anonymous counts described above. They receive only what they need to do that job.</p>
 
 <h2>How long we keep it</h2>
 <p>The map route of each drive (its GPS points) is deleted automatically 90 days after the drive. Trip summaries

@@ -4,7 +4,8 @@ import { alertFor } from '../../shared/alerts';
 import { distanceM } from '../../shared/drive';
 import type { EventIn, FamilyRules, IngestBody, LocationPermission, PointIn } from '../../shared/types';
 import { DEFAULT_RULES } from '../../shared/types';
-import { cleanUsage, type UsageAction } from '../../shared/usage';
+import { gaClientId, gaMeasurementId, gaPayloads } from '../../shared/ga';
+import { cleanUsage, type UsageAction, type UsageIn } from '../../shared/usage';
 import { hashToken, memberFromRequest, newId, newInviteCode, newToken, type Env, type Member } from './auth';
 import { page } from './pages';
 import { pushToParents } from './push';
@@ -17,9 +18,9 @@ const PERMISSIONS: LocationPermission[] = ['always', 'when_in_use', 'denied', 'u
 const ROUTE_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
 
 export default {
-  async fetch(req: Request, env: Env): Promise<Response> {
+  async fetch(req: Request, env: Env, ctx?: ExecutionContext): Promise<Response> {
     try {
-      return await route(req, env);
+      return await route(req, env, ctx);
     } catch (err) {
       if (err instanceof HttpError) return json({ error: err.message }, err.status);
       console.error(err);
@@ -61,7 +62,7 @@ function text(v: unknown, field: string, max = 60): string {
   return v.trim().slice(0, max);
 }
 
-async function route(req: Request, env: Env): Promise<Response> {
+async function route(req: Request, env: Env, ctx?: ExecutionContext): Promise<Response> {
   const url = new URL(req.url);
   const path = url.pathname.replace(/\/+$/, '');
   const method = req.method;
@@ -83,7 +84,7 @@ async function route(req: Request, env: Env): Promise<Response> {
   if (method === 'POST' && path === '/v1/invites') return createInvite(req, env, me);
   if (method === 'POST' && path === '/v1/push-token') return savePushToken(req, env, me);
   if (method === 'POST' && path === '/v1/ingest') return ingest(req, env, me);
-  if (method === 'POST' && path === '/v1/usage') return saveUsage(req, env, me);
+  if (method === 'POST' && path === '/v1/usage') return saveUsage(req, env, me, ctx);
   if (method === 'DELETE' && path === '/v1/me') return deleteMe(env, me);
   if (method === 'GET' && path === '/v1/live') return live(env, me);
   if (method === 'GET' && path === '/v1/trips') return listTrips(url, env, me);
@@ -359,8 +360,8 @@ async function track(env: Env, who: Actor, action: UsageAction, object: string |
   }
 }
 
-async function saveUsage(req: Request, env: Env, me: Member): Promise<Response> {
-  const b = await body<{ events?: unknown }>(req);
+async function saveUsage(req: Request, env: Env, me: Member, ctx?: ExecutionContext): Promise<Response> {
+  const b = await body<{ events?: unknown; gaClientId?: unknown }>(req);
   const now = Date.now();
   const rows = cleanUsage(b.events, now);
   if (rows.length) {
@@ -373,7 +374,30 @@ async function saveUsage(req: Request, env: Env, me: Member): Promise<Response> 
       ),
     );
   }
+  // Anonymous screen counts to GA4 (ADR 0010): screen names only, with the phone's random install id. After the
+  // response, and a failure is ignored: Google being down never costs the phone anything.
+  const send = sendScreensToGa(env, rows, b.gaClientId);
+  if (ctx) ctx.waitUntil(send);
+  else await send;
   return json({ saved: rows.length });
+}
+
+export async function sendScreensToGa(env: Env, rows: UsageIn[], rawClientId: unknown, doFetch: typeof fetch = fetch): Promise<number> {
+  const id = gaMeasurementId(env.GA4_ID);
+  const secret = env.GA4_API_SECRET?.trim();
+  const clientId = gaClientId(rawClientId);
+  if (!id || !secret || !clientId) return 0;
+  const url = `https://www.google-analytics.com/mp/collect?measurement_id=${id}&api_secret=${encodeURIComponent(secret)}`;
+  let sent = 0;
+  for (const payload of gaPayloads(rows, clientId)) {
+    try {
+      await doFetch(url, { method: 'POST', body: JSON.stringify(payload) });
+      sent += payload.events.length;
+    } catch {
+      // Counting is never worth an error.
+    }
+  }
+  return sent;
 }
 
 // ---- Data from the driver's phone ----

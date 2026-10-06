@@ -10,6 +10,7 @@ One short record per big decision: what, when, who decided, and why. `CLAUDE.md`
 | [0004](0004-phone-use-what-iphone-allows.md) | Phone use = unlock or handling over 25 mph; app names wait for Family Controls | Accepted | 2026-09-29 |
 | [0005](0005-never-ask-driver-while-moving.md) | Never ask the driver to tap anything while moving; catch tampering instead | Accepted | 2026-09-29 |
 | [0006](0006-not-building-crash-detection.md) | Not building crash detection or 911 calls | Accepted | 2026-09-29 |
-| [0007](0007-own-usage-counts-not-google.md) | App-use counts in our own database, not Google | Accepted, live | 2026-09-29 |
+| [0007](0007-own-usage-counts-not-google.md) | App-use counts in our own database, not Google | Accepted, live; changed by 0010 | 2026-09-29 |
 | [0008](0008-delete-routes-after-90-days.md) | Delete drive routes (GPS points) after 90 days | Accepted | 2026-10-01 |
 | [0009](0009-device-token-sign-in.md) | Sign in with a per-phone token from an invite code, no passwords | Accepted | 2026-09-29 |
+| [0010](0010-anonymous-ga4-screen-counts.md) | Anonymous GA4 screen counts sent by our server; GA4 tag on the public pages | Accepted | 2026-10-06 |

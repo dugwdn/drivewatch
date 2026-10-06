@@ -7,6 +7,10 @@ export interface Env {
   SUPPORT_EMAIL?: string;
   /** Workers rate limit binding for sign-ups (wrangler.toml [[ratelimits]]). */
   SIGNUP_LIMITER?: RateLimit;
+  /** GA4 Measurement ID (wrangler.toml [vars]). Empty = no web tag and no screen counts sent to Google. */
+  GA4_ID?: string;
+  /** GA4 Measurement Protocol API secret (`wrangler secret put GA4_API_SECRET`). Empty = no screen counts sent. */
+  GA4_API_SECRET?: string;
 }
 
 export interface Member {

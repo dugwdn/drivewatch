@@ -19,7 +19,8 @@ Cloud (Claude Code) sessions cannot deploy: they have no Cloudflare token, and w
 - **Cloudflare login:** `npx wrangler login` on Doug's laptop. No Cloudflare API token is stored in the repo or in cloud sessions.
 - **Expo / EAS login:** Doug's Expo account. Apple signing credentials are managed by EAS.
 - **`REVIEW_PHONE`:** environment variable on Doug's laptop, only for `metadata:push`. Kept out of git.
-- **Worker vars:** `SUPPORT_EMAIL` in `server/wrangler.toml` `[vars]` (not secret). There are no Worker secrets.
+- **Worker vars:** `SUPPORT_EMAIL` and `GA4_ID` (empty = analytics off) in `server/wrangler.toml` `[vars]` (not secret).
+- **Worker secrets:** `GA4_API_SECRET` (GA4 Measurement Protocol; `npx wrangler secret put GA4_API_SECRET` from `server/`). Empty = no app screen counts sent to Google. When turning it on, also change the App Store privacy label: Analytics, Product Interaction, not linked to the user, not used for tracking (ADR 0010).
 - **Bindings:** `DB` (D1 `drivewatch`), `SIGNUP_LIMITER` (rate limit, 10 per 60 s) in `server/wrangler.toml`.
 - **App config:** `app.json` `extra.apiUrl` (API address) and `extra.eas.projectId`.
 
