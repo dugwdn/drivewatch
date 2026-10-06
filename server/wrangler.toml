@@ -26,4 +26,4 @@ SUPPORT_EMAIL = "doug@webdesignnerd.com"
 # Google Analytics 4 (ADR 0010). Empty = off: no web tag on /, /privacy, /support and no app screen counts sent.
 # Set to the property's Measurement ID ("G-..."). App screen counts also need the Measurement Protocol API secret:
 # `npx wrangler secret put GA4_API_SECRET` (GA4 Admin > Data streams > the stream > Measurement Protocol API secrets).
-GA4_ID = ""
+GA4_ID = "G-6YN2K1TQ0Z"
