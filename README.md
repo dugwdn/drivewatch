@@ -65,6 +65,7 @@ Details and rollback: [docs/runbook.md](docs/runbook.md).
 
 | Doc | Where |
 |---|---|
+| Handoff (how it was built, why, how to take over) | [HANDOFF.md](HANDOFF.md) |
 | PRD (product requirements) | [docs/PRD.md](docs/PRD.md) |
 | Product roadmap | [docs/roadmap.md](docs/roadmap.md) |
 | TRD (technical design + technical roadmap, privacy) | [docs/TRD.md](docs/TRD.md) |
