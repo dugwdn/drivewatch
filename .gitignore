@@ -39,3 +39,12 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Generated native folders (Continuous Native Generation)
+/ios
+/android
+
+# Server
+server/node_modules/
+server/.wrangler/
+server/.dev.vars

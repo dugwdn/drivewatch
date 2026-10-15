@@ -1,0 +1,29 @@
+name = "drivewatch-api"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+
+# Runs every 5 minutes to catch phones that go quiet mid-drive.
+[triggers]
+crons = ["*/5 * * * *"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "drivewatch"
+database_id = "e679849b-45aa-4671-878c-16837fd4371a"
+migrations_dir = "migrations"
+
+# 10 sign-up tries (new family or join code) per minute per network address.
+# Free on every plan; counts live in Cloudflare, not D1.
+[[ratelimits]]
+name = "SIGNUP_LIMITER"
+namespace_id = "1001"
+  [ratelimits.simple]
+  limit = 10
+  period = 60
+
+[vars]
+SUPPORT_EMAIL = "doug@webdesignnerd.com"
+# Google Analytics 4 (ADR 0010). Empty = off: no web tag on /, /privacy, /support and no app screen counts sent.
+# Set to the property's Measurement ID ("G-..."). App screen counts also need the Measurement Protocol API secret:
+# `npx wrangler secret put GA4_API_SECRET` (GA4 Admin > Data streams > the stream > Measurement Protocol API secrets).
+GA4_ID = "G-6YN2K1TQ0Z"

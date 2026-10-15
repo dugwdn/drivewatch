@@ -5,10 +5,21 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.webdesignnerd.drivewatch"
+      "bundleIdentifier": "com.webdesignnerd.drivewatch",
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "location",
+          "fetch",
+          "remote-notification"
+        ],
+        "NSLocationWhenInUseUsageDescription": "DriveWatch uses your location to log drives and share them with your family.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "DriveWatch needs \"Always\" so it can log every drive on its own, even when the app is closed.",
+        "NSMotionUsageDescription": "DriveWatch uses motion to tell when the phone is being held during a drive.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -26,7 +37,25 @@
     "extra": {
       "eas": {
         "projectId": "28602363-d6d0-4c38-b15e-c82e677b96e9"
-      }
+      },
+      "apiUrl": "https://drivewatch-api.noisy-sunset-3f0d.workers.dev"
+    },
+    "scheme": "drivewatch",
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "DriveWatch needs \"Always\" so it can log every drive on its own, even when the app is closed.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true
+        }
+      ],
+      "expo-notifications"
+    ],
+    "experiments": {
+      "typedRoutes": true
     }
   }
 }
