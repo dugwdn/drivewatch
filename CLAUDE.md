@@ -28,6 +28,7 @@ This project keeps the docs a real company would. Update the matching doc in the
 
 | Doc | Where |
 |---|---|
+| Handoff (how it was built, why, how to take over) | `HANDOFF.md` |
 | PRD (product requirements) | `docs/PRD.md` |
 | Product roadmap | `docs/roadmap.md` |
 | TRD (technical design + technical roadmap) | `docs/TRD.md` (includes privacy and data handling) |
@@ -36,6 +37,8 @@ This project keeps the docs a real company would. Update the matching doc in the
 | Changelog | `CHANGELOG.md` |
 | Runbook | `docs/runbook.md` |
 | Test plan | `docs/test-plan.md` |
+
+- **HANDOFF.md (Doug, 2026-10-15, standing):** update HANDOFF.md in the same PR as any change to hosting, domain/DNS, the data model or migrations, the build/deploy path, scheduled jobs, outside services, or a key decision (new ADR).
 
 ## Phone back button (standing rule, Doug 2026-10-01)
 
@@ -56,6 +59,7 @@ Phone back button stays in the app: every in-app screen, step, or modal is somet
 
 ## Current state
 
+- HANDOFF.md added 2026-10-15 (how it was built, why, how to take over).
 - Phase 1 code written (PR "Phase 1: drive tracking and phone-use alerts"). Server tested locally end to end. The iPhone build has not been compiled yet (no Mac here; first EAS build will show any Swift errors).
 - Server live (2026-09-29): Worker `drivewatch-api` at https://drivewatch-api.noisy-sunset-3f0d.workers.dev, D1 `drivewatch` with migration 0001 applied. Deployed from Doug's laptop with `npx wrangler deploy` (no Cloudflare token in cloud sessions; workers.dev is blocked by the cloud network policy, so check it with a web fetch).
 - App-use counts (analytics) live 2026-09-29: migration 0002 applied to the live database and Worker redeployed from Doug's laptop. No screen shows the counts yet. If wrangler on the laptop says code 7403 on a D1 command, `npx wrangler logout` then `npx wrangler login` fixes it.
