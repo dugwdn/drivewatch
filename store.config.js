@@ -13,6 +13,8 @@ if (!phone && process.argv.some((a) => a.startsWith('metadata:push'))) {
 module.exports = {
   configVersion: 0,
   apple: {
+    // App Store version this listing is for; keep in step with app.json "version".
+    version: '1.0.0',
     copyright: '2026 Doug Weil',
     categories: ['NAVIGATION', 'LIFESTYLE'],
     advisory: {
